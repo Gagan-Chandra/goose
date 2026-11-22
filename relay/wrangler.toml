@@ -9,4 +9,4 @@ compatibility_date = "2026-09-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "goose-couple"
-database_id = "REPLACE_ME"
+database_id = "c5c8ef98-bfaa-4676-8b4b-4782eb5c5b8a"
