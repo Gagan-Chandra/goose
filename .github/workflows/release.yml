@@ -32,6 +32,16 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
+      # Newer npm can skip packages' install steps. Run the window-reading
+      # helper's install explicitly, then prove it loads, so a Windows build
+      # can never ship without it.
+      - name: Windows window helper
+        if: runner.os == 'Windows'
+        working-directory: app/node_modules/get-windows
+        run: npx node-pre-gyp install --fallback-to-build
+      - name: Check the window helper loads
+        if: runner.os == 'Windows'
+        run: node -e "import('get-windows').then(m => m.openWindows()).then(w => console.log('get-windows OK, windows visible:', w.length))"
       - name: Package
         run: npx electron-builder ${{ matrix.target }} --publish never
         env:
