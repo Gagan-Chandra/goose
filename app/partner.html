@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>Your partner</title>
+<style>
+  :root { --bg: #fbfaf7; --card: #fff; --fg: #1b1b1b; --muted: #6b6b6b; --line: #e3e0d9; --accent: #f08a24; --heart: #ff5d7e; --field: #fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1b1b1d; --card: #242427; --fg: #f2f2f2; --muted: #a0a0a0; --line: #38383b; --field: #2c2c30; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px; background: var(--bg); color: var(--fg);
+    font: 14px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  h1 { margin: 0 0 14px; font-size: 20px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 13px; }
+  h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  input, textarea, select { width: 100%; padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 9px;
+    background: var(--field); color: var(--fg); font: inherit; }
+  textarea { height: 64px; resize: none; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  button { padding: 9px 14px; border: 0; border-radius: 9px; background: var(--accent); color: #241300;
+    font: 650 14px inherit; font-family: inherit; cursor: pointer; }
+  button.ghost { background: transparent; border: 1.5px solid var(--line); color: var(--fg); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row + .row { margin-top: 9px; }
+  .grow { flex: 1; }
+  .status { display: flex; align-items: center; gap: 9px; font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #9aa0a6; }
+  .dot.focusing { background: #2fae6a; } .dot.slacking { background: #e4a11b; }
+  .dot.break { background: #4a9fd8; } .dot.offline { background: #9aa0a6; }
+  .muted { color: var(--muted); font-size: 12.5px; }
+  .nudges { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .nudges button { background: var(--field); border: 1.5px solid var(--line); color: var(--fg); font-weight: 600; }
+  .code { font: 700 28px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .22em;
+    text-align: center; padding: 14px; background: var(--field); border: 1.5px dashed var(--accent); border-radius: 10px; }
+  ul { list-style: none; margin: 10px 0 0; padding: 0; }
+  li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+  li .grow { font-weight: 600; }
+  li small { color: var(--muted); font-weight: 400; display: block; }
+  .x { background: transparent; border: 0; color: var(--muted); font-size: 17px; cursor: pointer; padding: 0 4px; }
+  .toast { color: var(--accent); font-weight: 600; min-height: 1.2em; margin-top: 9px; font-size: 13px; }
+  .hearts { color: var(--heart); font-weight: 700; }
+  .hide { display: none; }
+</style>
+</head>
+<body>
+  <h1>💌 Your partner</h1>
+
+  <!-- not paired yet -->
+  <div id="setup">
+    <section>
+      <h2>Pair your cats</h2>
+      <p class="muted" style="margin-top:0">Link two computers so the cats can carry notes between you. One of you starts and shares the code; the other joins with it.</p>
+      <div class="row"><input id="myName" placeholder="Your name" maxlength="24"></div>
+      <div class="row">
+        <button id="start" class="grow">Start and get a code</button>
+        <button id="showJoin" class="ghost grow">I have a code</button>
+      </div>
+      <div id="joinBox" class="hide">
+        <div class="row"><input id="code" placeholder="6-character code" maxlength="6" style="text-transform:uppercase"></div>
+        <div class="row"><button id="join" class="grow">Pair</button></div>
+      </div>
+      <div id="codeBox" class="hide">
+        <div class="code" id="codeOut">------</div>
+        <p class="muted">Send this code and their download link to your partner. It's good for one hour, one use.</p>
+      </div>
+      <div class="toast" id="setupToast"></div>
+    </section>
+  </div>
+
+  <!-- paired -->
+  <div id="paired" class="hide">
+    <section>
+      <h2>Right now</h2>
+      <div class="status"><span class="dot" id="dot"></span><span id="who">—</span></div>
+      <p class="muted" id="detail" style="margin:6px 0 0"></p>
+      <p class="muted" style="margin:10px 0 0">Hearts sent together: <span class="hearts" id="hearts">0</span></p>
+    </section>
+
+    <section>
+      <h2>Send something</h2>
+      <textarea id="note" placeholder="Type a note… their cat will deliver it"></textarea>
+      <div class="row" style="margin-top:9px"><button id="sendNote" class="grow">Send note</button></div>
+      <div class="nudges">
+        <button data-nudge="thinking of you ❤️">❤️ Thinking of you</button>
+        <button data-nudge="coffee? ☕">☕ Coffee?</button>
+        <button data-nudge="call me 📞">📞 Call me</button>
+        <button data-nudge="good luck! 🍀">🍀 Good luck</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="focusTogether" class="ghost grow">🐾 Start a 25-min focus session together</button>
+      </div>
+      <div class="toast" id="sendToast"></div>
+    </section>
+
+    <section>
+      <h2>Remind them</h2>
+      <div class="row"><input id="rText" placeholder="Take your medicine" maxlength="120"></div>
+      <div class="row">
+        <input id="rTime" type="time" class="grow">
+        <select id="rRepeat" class="grow">
+          <option value="">Once</option>
+          <option value="daily">Every day</option>
+          <option value="weekdays">Weekdays</option>
+        </select>
+        <button id="addReminder">Add</button>
+      </div>
+      <ul id="reminders"></ul>
+      <div class="toast" id="remToast"></div>
+    </section>
+
+    <section>
+      <h2>Pairing</h2>
+      <div class="row"><button id="unlink" class="ghost grow">Unlink this computer</button></div>
+    </section>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const ERRORS = {
+  unreachable: "Can't reach the server. Check your connection.",
+  pair_full: "Both spots in this pair are taken. Unlink one computer first.",
+  bad_code: "That code didn't match. Check it and try again.",
+  code_expired: "That code expired. Ask for a fresh one.",
+  unknown_pair: "No pair found for that code. Your partner should start first.",
+  not_paired: "You're not paired yet.",
+};
+const toast = (el, text, ms = 3000) => { $(el).textContent = text; if (ms) setTimeout(() => { if ($(el).textContent === text) $(el).textContent = ""; }, ms); };
+const fail = (el, res) => { toast(el, ERRORS[res.error] || `Something went wrong (${res.error})`, 5000); return false; };
+
+async function refresh() {
+  const s = await window.goose.partnerState();
+  const paired = s.paired || (s.identity && s.partner);
+  $("setup").classList.toggle("hide", !!s.identity);
+  $("paired").classList.toggle("hide", !s.identity);
+  if (!s.identity) return;
+  if (!s.partner) {
+    $("who").textContent = "Waiting for your partner to join…";
+    $("dot").className = "dot";
+    $("detail").textContent = "Send them the code from this window.";
+  } else {
+    const p = s.partner;
+    const label = { focusing: "focusing", slacking: "slacking off", break: "on a break", away: "around", offline: "offline" }[p.status] || p.status;
+    $("who").textContent = `${p.name} is ${label}`;
+    $("dot").className = `dot ${p.status}`;
+    $("detail").textContent = p.focusMinutes ? `${p.focusMinutes} focused minutes today.` : "";
+  }
+  $("hearts").textContent = s.hearts || 0;
+  loadReminders();
+}
+
+async function loadReminders() {
+  const res = await window.goose.partnerReminders();
+  const list = $("reminders");
+  list.innerHTML = "";
+  for (const r of res.reminders || []) {
+    const li = document.createElement("li");
+    const when = new Date(r.due);
+    const repeat = r.repeat === "daily" ? "every day" : r.repeat === "weekdays" ? "weekdays" : "once";
+    li.innerHTML = `<span class="grow"></span><button class="x" title="Remove">✕</button>`;
+    li.firstChild.innerHTML = `${r.text}<small>${when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · ${repeat}</small>`;
+    li.querySelector("button").addEventListener("click", async () => {
+      await window.goose.partnerDeleteReminder(r.id);
+      loadReminders();
+    });
+    list.appendChild(li);
+  }
+}
+
+$("showJoin").addEventListener("click", () => $("joinBox").classList.toggle("hide"));
+
+$("start").addEventListener("click", async () => {
+  const res = await window.goose.pairStart($("myName").value.trim() || "Me");
+  if (res.error) return fail("setupToast", res);
+  $("codeOut").textContent = res.code;
+  $("codeBox").classList.remove("hide");
+  toast("setupToast", "Code ready. Send it to your partner.", 6000);
+  refresh();
+});
+
+$("join").addEventListener("click", async () => {
+  const res = await window.goose.pairJoin($("myName").value.trim() || "Me", $("code").value.trim().toUpperCase());
+  if (res.error) return fail("setupToast", res);
+  toast("setupToast", "Paired! 🐾");
+  refresh();
+});
+
+$("sendNote").addEventListener("click", async () => {
+  const text = $("note").value.trim();
+  if (!text) return;
+  const res = await window.goose.partnerSend("note", text);
+  if (res.error) return fail("sendToast", res);
+  $("note").value = "";
+  toast("sendToast", "Sent 🐾 their cat is on its way.");
+});
+
+for (const b of document.querySelectorAll("[data-nudge]")) {
+  b.addEventListener("click", async () => {
+    const res = await window.goose.partnerSend("nudge", b.dataset.nudge);
+    if (res.error) return fail("sendToast", res);
+    toast("sendToast", "Sent 🐾");
+  });
+}
+
+$("focusTogether").addEventListener("click", async () => {
+  const res = await window.goose.partnerSend("session", "25");
+  if (res.error) return fail("sendToast", res);
+  toast("sendToast", "Focus session started. Both cats are watching 🐾");
+});
+
+$("addReminder").addEventListener("click", async () => {
+  const text = $("rText").value.trim();
+  const time = $("rTime").value;
+  if (!text || !time) return toast("remToast", "Add a message and a time.");
+  const [h, m] = time.split(":").map(Number);
+  const due = new Date();
+  due.setHours(h, m, 0, 0);
+  if (due.getTime() < Date.now()) due.setDate(due.getDate() + 1); // next occurrence
+  const res = await window.goose.partnerAddReminder({ text, due: due.getTime(), repeat: $("rRepeat").value });
+  if (res.error) return fail("remToast", res);
+  $("rText").value = "";
+  toast("remToast", "Added. Their cat will deliver it.");
+  loadReminders();
+});
+
+$("unlink").addEventListener("click", async () => {
+  await window.goose.pairUnlink();
+  location.reload();
+});
+
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>

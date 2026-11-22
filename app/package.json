@@ -1,0 +1,65 @@
+{
+  "name": "goose",
+  "version": "0.1.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "type": "module",
+  "devDependencies": {
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "get-windows": "^9.3.0"
+  },
+  "productName": "Goose",
+  "private": true,
+  "description": "A desktop cat that keeps you company.",
+  "author": "Gagan",
+  "build": {
+    "appId": "app.desktopcat",
+    "productName": "Goose",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!build/*.html",
+      "!dist/**",
+      "!**/*.map"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.entertainment",
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "npmRebuild": false
+  },
+  "allowScripts": {
+    "electron@44.4.3": true,
+    "get-windows@9.3.0": true,
+    "electron-builder@26.15.3": true
+  }
+}

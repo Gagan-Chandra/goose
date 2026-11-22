@@ -1,0 +1,28 @@
+const { contextBridge, ipcRenderer } = require("electron");
+
+contextBridge.exposeInMainWorld("goose", {
+  onState: (fn) => ipcRenderer.on("goose-state", (_e, s) => fn(s)),
+  onCursor: (fn) => ipcRenderer.on("cursor", (_e, pos) => fn(pos)),
+  onWindows: (fn) => ipcRenderer.on("windows", (_e, list) => fn(list)),
+  onResume: (fn) => ipcRenderer.on("resume", (_e, catState) => fn(catState)),
+  handoff: (catState) => ipcRenderer.send("handoff", catState),
+  setInteractive: (on) => ipcRenderer.send("set-interactive", on),
+  dismissNote: () => ipcRenderer.send("dismiss-note"),
+  openSettings: () => ipcRenderer.send("open-settings"),
+  setHome: (home) => ipcRenderer.send("set-home", home),
+  petted: () => ipcRenderer.send("petted"),
+  greeted: () => ipcRenderer.send("greeted"),
+  openAccessibility: () => ipcRenderer.send("open-accessibility"),
+  onPartnerMessage: (fn) => ipcRenderer.on("partner-message", (_e, m) => fn(m)),
+  openPartner: () => ipcRenderer.send("open-partner"),
+  partnerState: () => ipcRenderer.invoke("partner-state"),
+  pairStart: (name) => ipcRenderer.invoke("pair-start", name),
+  pairJoin: (name, code) => ipcRenderer.invoke("pair-join", name, code),
+  pairUnlink: () => ipcRenderer.invoke("pair-unlink"),
+  partnerSend: (kind, text) => ipcRenderer.invoke("partner-send", kind, text),
+  partnerReminders: () => ipcRenderer.invoke("partner-reminders"),
+  partnerAddReminder: (r) => ipcRenderer.invoke("partner-add-reminder", r),
+  partnerDeleteReminder: (id) => ipcRenderer.invoke("partner-delete-reminder", id),
+  getSettings: () => ipcRenderer.invoke("get-settings"),
+  saveSettings: (s) => ipcRenderer.invoke("save-settings", s),
+});

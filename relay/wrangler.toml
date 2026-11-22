@@ -1,0 +1,12 @@
+# The Couple server. Free tier is plenty: a pair syncs every 15 seconds.
+#   npx wrangler d1 create goose-couple      # then paste the id below
+#   npx wrangler d1 execute goose-couple --remote --file=schema.sql
+#   npx wrangler deploy
+name = "goose-couple"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "goose-couple"
+database_id = "REPLACE_ME"

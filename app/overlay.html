@@ -1,0 +1,1178 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif; }
+
+  #pet { position: absolute; left: 0; top: 0; width: 160px; height: 120px; cursor: grab; will-change: transform; touch-action: none; }
+  #pet svg { transform-origin: 0 0; }
+  #pet svg { width: 100%; height: 100%; overflow: visible; }
+
+  .bubble { position: absolute; left: 50%; bottom: calc(100% - 4px); transform: translateX(-30%);
+    background: #fff; color: #1b1b1b; border: 2.5px solid #3b2a20; border-radius: 14px;
+    padding: 7px 11px; font-size: 14px; font-weight: 650; line-height: 1.25;
+    width: max-content; max-width: 240px; box-shadow: 3px 3px 0 #3b2a20;
+    opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .bubble.show { opacity: 1; }
+  .bubble::after { content: ""; position: absolute; left: 26%; bottom: -9px; width: 12px; height: 12px;
+    background: #fff; border-right: 2.5px solid #3b2a20; border-bottom: 2.5px solid #3b2a20; transform: rotate(45deg); }
+  .bubble.alert { font-size: 26px; padding: 0 13px; }
+
+  .zzz { position: absolute; left: 68%; top: 42%; font-weight: 800; color: #8a97b5; font-size: 16px;
+    opacity: 0; pointer-events: none; }
+  #pet.sleeping .zzz { animation: zzz 2.6s infinite; }
+  #pet.sleeping .zzz:nth-of-type(2) { animation-delay: .87s; }
+  #pet.sleeping .zzz:nth-of-type(3) { animation-delay: 1.73s; }
+  #pet.left .zzz { left: 19%; }
+  @keyframes zzz { 0% { opacity: 0; transform: translate(0, 0) scale(.7); }
+    30% { opacity: 1; } 100% { opacity: 0; transform: translate(14px, -44px) scale(1.2); } }
+
+  .heart { position: absolute; color: #ff6b8a; font-size: 18px; pointer-events: none;
+    animation: heart 1.3s ease-out forwards; text-shadow: 0 1px 0 #b3334f; }
+  @keyframes heart { 0% { opacity: 0; transform: translate(0, 0) scale(.5); } 20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--dx), -60px) scale(1.2); } }
+
+  #envelope { position: absolute; left: 0; top: 0; font-size: 26px; display: none;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,.25)); pointer-events: none; }
+  #envelope.show { display: block; }
+
+  #letter { position: absolute; left: 0; top: 0; width: 330px; padding: 20px 22px 16px;
+    background: #fffdf7; color: #221; border-radius: 10px; border: 1px solid #efe4cf;
+    box-shadow: 0 16px 44px rgba(0,0,0,.32); display: none; text-align: center; }
+  #letter.show { display: block; }
+  #letter .from { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #b4763a; }
+  #letter .msg { margin: 10px 0 16px; font-size: 17px; line-height: 1.4; font-weight: 550; word-wrap: break-word; }
+  #letter .buttons { display: flex; gap: 8px; justify-content: center; }
+  #letter button { font: 600 14px -apple-system, "Segoe UI", system-ui, sans-serif; padding: 8px 15px;
+    border: 2px solid #2b2b2b; border-radius: 999px; background: #fff; cursor: pointer; box-shadow: 2px 2px 0 #2b2b2b; }
+  #letter button.primary { background: #ffd0dc; }
+  #letter button:active { transform: translate(2px, 2px); box-shadow: none; }
+
+  #note { position: absolute; left: 0; top: 0; width: 330px; padding: 22px 22px 18px;
+    background: #fff4a8; color: #222; border-radius: 4px; box-shadow: 0 14px 40px rgba(0,0,0,.35);
+    font-family: "Marker Felt", "Comic Sans MS", "Chalkboard SE", cursive; text-align: center;
+    display: none; transform-origin: 50% 0; }
+  #note.show { display: block; }
+  #note h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.05; letter-spacing: .5px; }
+  #note p { margin: 0 0 14px; font-size: 16px; }
+  #note .goal { font-weight: 700; }
+  #note button { font: 600 15px -apple-system, "Segoe UI", system-ui, sans-serif; padding: 9px 16px;
+    border: 2px solid #222; border-radius: 999px; background: #fff; cursor: pointer; box-shadow: 2px 2px 0 #222; }
+  #note button:active { transform: translate(2px, 2px); box-shadow: none; }
+  #note::before { content: ""; position: absolute; top: -10px; left: 50%; width: 80px; height: 22px;
+    transform: translateX(-50%) rotate(-3deg); background: rgba(255,255,255,.55); }
+</style>
+</head>
+<body>
+<div id="note" class="interactive">
+  <h1>GET BACK TO WORK</h1>
+  <p>You said you'd <span class="goal"></span>.<br>The cat is disappointed.</p>
+  <button id="dismiss">Okay, I'm back</button>
+</div>
+
+<div id="letter" class="interactive">
+  <div class="from"></div>
+  <div class="msg"></div>
+  <div class="buttons">
+    <button class="primary" id="letterReply">Reply 💌</button>
+    <button id="letterOk">Okay</button>
+  </div>
+</div>
+<div id="envelope">✉️</div>
+
+<div id="pet" class="interactive">
+  <div class="bubble"></div>
+  <span class="zzz">z</span><span class="zzz">z</span><span class="zzz">Z</span>
+</div>
+
+<script src="cat.js"></script>
+<script>
+const petEl = document.getElementById("pet");
+const bubble = petEl.querySelector(".bubble");
+const note = document.getElementById("note");
+const cat = new Cat(petEl);
+const W = () => window.innerWidth, H = () => window.innerHeight;
+
+// The cat's position is in global screen coordinates so it can cross screens.
+// Each overlay draws the part that falls inside its own display.
+const MY_DISPLAY = Number(new URLSearchParams(location.search).get("displayId"));
+let myDisplay = null;   // { id, bounds, workArea } in global coordinates
+let active = true;      // is the cat on this screen right now?
+const origin = () => myDisplay?.bounds || { x: 0, y: 0 };
+const toLocalX = (x) => x - origin().x;
+const toLocalY = (y) => y - origin().y;
+const centerX = () => (myDisplay ? myDisplay.workArea.x + myDisplay.workArea.width / 2 : W() / 2);
+const centerY = () => (myDisplay ? myDisplay.workArea.y + myDisplay.workArea.height / 2 : H() / 2);
+let PET_W = 160, PET_H = 120, S = 1; // S: size setting, 1 = 100%
+
+function applySize(pct) {
+  const next = Math.min(1.5, Math.max(0.7, (Number(pct) || 100) / 100));
+  if (Math.abs(next - S) < 0.001) return;
+  S = next;
+  PET_W = 160 * S; PET_H = 120 * S;
+  FEET_X = 78 * S; FEET_Y = 112 * S;
+  petEl.style.width = `${PET_W}px`;
+  petEl.style.height = `${PET_H}px`;
+}
+
+const p = {
+  x: 200, y: 0, tx: 200, ty: 0, facing: 1, flip: 1, v: 0, rot: 0, squash: 0, pauseUntil: 0, sitting: false,
+  dizzyUntil: 0, leapNext: false,
+  plan: null,        // multi-step activity: climb a wall, go to a window, sit on it
+  perch: null,       // the window the cat is sitting on
+  surfRot: 0, surfRotTarget: 0, // -90/90 while clinging to the right/left screen edge
+};
+let state = { mood: "calm" };
+let carrying = false;      // note is in the cat's mouth
+let noteShown = false;
+let lastNag = 0;
+let bubbleUntil = 0;
+let mouse = null;
+let hoverSince = 0;
+let petting = false;
+
+p.y = p.ty = H() - PET_H - 30; // replaced by the real floor once the first state arrives
+
+// --- sounds (synthesized, so there are no audio files to license) ---
+let audio, master;
+function ctx() {
+  if (!audio) {
+    audio = new AudioContext();
+    master = audio.createGain();
+    master.connect(audio.destination);
+  }
+  master.gain.value = state.quiet ? 0 : (state.volume ?? 60) / 100;
+  return audio;
+}
+
+function meow(long = false) {
+  const a = ctx(), t = a.currentTime, dur = long ? 0.75 : 0.5;
+  cat.meow(dur);
+  const osc = a.createOscillator(), vib = a.createOscillator(), vibGain = a.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(470, t);
+  osc.frequency.linearRampToValueAtTime(740, t + dur * 0.28);
+  osc.frequency.linearRampToValueAtTime(560, t + dur * 0.7);
+  osc.frequency.linearRampToValueAtTime(410, t + dur);
+  vib.frequency.value = 6; vibGain.gain.value = 9;
+  vib.connect(vibGain).connect(osc.frequency);
+  // Two formants sweeping "ee-ah-oo" make the oscillator sound like a meow.
+  const f1 = a.createBiquadFilter(), f2 = a.createBiquadFilter(), gain = a.createGain();
+  f1.type = f2.type = "bandpass";
+  f1.Q.value = 5; f2.Q.value = 7;
+  f1.frequency.setValueAtTime(700, t);
+  f1.frequency.linearRampToValueAtTime(1250, t + dur * 0.35);
+  f1.frequency.linearRampToValueAtTime(650, t + dur);
+  f2.frequency.value = 2600;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.5, t + 0.06);
+  gain.gain.setValueAtTime(0.45, t + dur * 0.7);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(f1).connect(gain);
+  osc.connect(f2).connect(gain);
+  gain.connect(master);
+  osc.start(t); vib.start(t); osc.stop(t + dur); vib.stop(t + dur);
+}
+
+function noise(a, seconds) {
+  const buf = a.createBuffer(1, a.sampleRate * seconds, a.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = a.createBufferSource(); src.buffer = buf;
+  return src;
+}
+
+function hiss() {
+  const a = ctx(), t = a.currentTime;
+  cat.meow(0.8);
+  const src = noise(a, 0.8), hp = a.createBiquadFilter(), gain = a.createGain();
+  hp.type = "highpass"; hp.frequency.value = 3000;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.28, t + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+  src.connect(hp).connect(gain).connect(master);
+  src.start(t);
+}
+
+let purrNodes = null;
+function purr(on) {
+  if (on && !purrNodes) {
+    const a = ctx(), src = noise(a, 2), lp = a.createBiquadFilter(), amp = a.createGain(), out = a.createGain();
+    const lfo = a.createOscillator(), depth = a.createGain();
+    src.loop = true;
+    lp.type = "lowpass"; lp.frequency.value = 160;
+    lfo.frequency.value = 24; depth.gain.value = 0.5; amp.gain.value = 0.5;
+    lfo.connect(depth).connect(amp.gain);
+    out.gain.setValueAtTime(0.0001, a.currentTime);
+    out.gain.exponentialRampToValueAtTime(0.6, a.currentTime + 0.4);
+    src.connect(lp).connect(amp).connect(out).connect(master);
+    src.start(); lfo.start();
+    purrNodes = { src, lfo, out, a };
+  } else if (!on && purrNodes) {
+    const { src, lfo, out, a } = purrNodes;
+    out.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.3);
+    src.stop(a.currentTime + 0.35); lfo.stop(a.currentTime + 0.35);
+    purrNodes = null;
+  }
+}
+
+function say(text, ms = 4000, cls = "") {
+  bubble.textContent = text;
+  bubble.className = `bubble show ${cls}`;
+  bubbleUntil = performance.now() + ms;
+}
+
+function heart() {
+  const h = document.createElement("div");
+  h.className = "heart";
+  h.textContent = "♥";
+  h.style.left = `${toLocalX(p.x) + (p.facing > 0 ? 112 : 30) * S + (Math.random() - 0.5) * 20}px`;
+  h.style.top = `${toLocalY(p.y) + 10}px`;
+  h.style.setProperty("--dx", `${(Math.random() - 0.5) * 40}px`);
+  document.body.appendChild(h);
+  setTimeout(() => h.remove(), 1300);
+}
+
+function shortApp() {
+  const t = (state.title || "").split(/ [—–-] /)[0].trim();
+  return (t && t.length < 40 ? t : state.app) || "this";
+}
+
+const NAGS = [
+  () => `Mrrow? Is "${shortApp()}" how you ${state.goal}?`,
+  () => `I see ${shortApp()}. I don't see you trying to ${state.goal}.`,
+  () => `Meow. You said you'd ${state.goal}.`,
+  () => `This is not "${state.goal}". Hmph.`,
+];
+
+// --- behavior ---
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+// Screen limits for the cat's box, inside the usable area (no menu bar or dock).
+function bounds() {
+  const wa = myDisplay?.workArea || { x: 0, y: 0, width: W(), height: H() };
+  return { left: wa.x - 10, right: wa.x + wa.width - PET_W + 10, top: wa.y, floor: wa.y + wa.height - PET_H - 4 };
+}
+
+// A side is "open" when another screen sits against it: the cat walks through
+// instead of hitting a wall, and is handed over to that screen.
+function openSide(side) {
+  const b = myDisplay?.bounds;
+  if (!b || !state.displays) return false;
+  return state.displays.some((d) => {
+    if (d.id === MY_DISPLAY) return false;
+    const o = d.bounds;
+    const vOverlap = Math.min(b.y + b.height, o.y + o.height) - Math.max(b.y, o.y) > 60;
+    const hOverlap = Math.min(b.x + b.width, o.x + o.width) - Math.max(b.x, o.x) > 60;
+    if (side === "left") return vOverlap && Math.abs(o.x + o.width - b.x) < 4;
+    if (side === "right") return vOverlap && Math.abs(o.x - (b.x + b.width)) < 4;
+    if (side === "top") return hOverlap && Math.abs(o.y + o.height - b.y) < 4;
+    if (side === "bottom") return hOverlap && Math.abs(o.y - (b.y + b.height)) < 4;
+    return false;
+  });
+}
+
+// Targets may sit a little past an open edge so the cat walks off it.
+function travelBounds() {
+  const b = bounds();
+  return {
+    left: b.left - (openSide("left") ? 90 : 0),
+    right: b.right + (openSide("right") ? 90 : 0),
+    top: b.top - (openSide("top") ? 90 : 0),
+    floor: b.floor + (openSide("bottom") ? 90 : 0),
+  };
+}
+
+// Walked off an edge: let the next screen's cat take over from here.
+function handOff() {
+  active = false;
+  petEl.style.display = "none";
+  hideNote(); closeLetter();
+  window.goose.handoff({
+    x: p.x, y: p.y, tx: p.tx, ty: p.ty, facing: p.facing, v: p.v,
+    phys: phys ? { ...phys } : null,
+    home: state.home,
+  });
+}
+
+window.goose.onResume((s) => {
+  Object.assign(p, { x: s.x, y: s.y, tx: s.tx ?? s.x, ty: s.ty ?? s.y, facing: s.facing ?? 1, v: s.v ?? 0 });
+  p.plan = null; p.perch = null; p.pauseUntil = 0;
+  leap = null; held = null;
+  phys = s.phys || null;
+  active = true;
+  petEl.style.display = "";
+});
+
+// Where the cat should hang out, or null to roam.
+function homeSpot() {
+  const h = state.home || { mode: "roam" };
+  const b = bounds();
+  if (h.mode === "spot") return [clamp(h.x, b.left, b.right), clamp(h.y, b.top, b.floor)];
+  if (h.mode === "corner") {
+    const right = h.corner.endsWith("right"), bottom = h.corner.startsWith("bottom");
+    // Corners belong to the screen the cat is currently on.
+    return [right ? b.right - 6 : b.left + 6, bottom ? b.floor : b.top + 6];
+  }
+  return null;
+}
+
+function pickWanderTarget() {
+  const b = bounds();
+  p.tx = b.left + 20 + Math.random() * (b.right - b.left - 40);
+  // Half the time stay on the floor; otherwise explore anywhere on screen.
+  p.ty = Math.random() < 0.5 ? b.floor : b.top + 30 + Math.random() * (b.floor - b.top - 30);
+}
+
+// Little things a cat does while hanging around.
+function idleAction() {
+  const r = Math.random();
+  if (r < 0.22) cat.play("groom", 3.2);
+  else if (r < 0.36) cat.play("stretch", 2.2);
+  else if (r < 0.48) cat.play("yawn", 1.6);
+  else {
+    p.sitting = Math.random() < 0.65;
+    cat.tiltHead(Math.random() < 0.4 ? (Math.random() - 0.5) * 24 : 0);
+  }
+}
+
+// --- jumps: crouch, then a ballistic arc to the target ---
+let leap = null; // { stage: "crouch" | "air", start, crouchMs, to, from, dur, height, onLand, cancelOnCursor }
+const leapTarget = () => (typeof leap.to === "function" ? leap.to() : leap.to);
+
+function startLeap(to, { crouchMs = 350, onLand = null, cancelOnCursor = false } = {}) {
+  leap = { stage: "crouch", start: performance.now(), crouchMs, to, onLand, cancelOnCursor };
+  p.v = 0;
+  cat.action = null;
+}
+
+function leapStep(now) {
+  if (leap.stage === "crouch") {
+    p.facing = leapTarget()[0] > p.x ? 1 : -1;
+    if (leap.cancelOnCursor && (cursorMovedAt > leap.start + 60 || !state.follow)) { leap = null; return; }
+    if (now - leap.start > leap.crouchMs) {
+      const to = leapTarget();
+      const dist = Math.hypot(to[0] - p.x, to[1] - p.y);
+      Object.assign(leap, {
+        stage: "air", start: now, from: [p.x, p.y], to,
+        dur: clamp(dist * 2.4, 320, 650),
+        height: 30 + dist * 0.18 + Math.max(0, p.y - to[1]) * 0.3,
+      });
+    }
+    return;
+  }
+  const u = Math.min(1, (now - leap.start) / leap.dur);
+  p.x = lerp(leap.from[0], leap.to[0], u);
+  p.y = lerp(leap.from[1], leap.to[1], u);
+  if (u >= 1) {
+    const onLand = leap.onLand;
+    leap = null;
+    p.tx = p.x; p.ty = p.y; p.v = 0;
+    p.squash = 1;
+    onLand?.(now);
+  }
+}
+
+// --- follow mode: trot after the cursor, stalk it, pounce when it holds still ---
+const STALK_GAP = 120;     // how far back the cat waits before pouncing
+const POUNCE_AFTER = 1300; // ms the cursor must hold still
+const POUNCE_COOLDOWN = 7000;
+let cursorMovedAt = 0;
+let followSide = 1;        // which side of the cursor the cat approaches from
+let lastPounce = -Infinity;
+let caughtAt = 0;          // landed on the cursor; stay put until it moves
+
+window.goose.onCursor((pos) => {
+  if (!mouse || Math.hypot(pos[0] - mouse[0], pos[1] - mouse[1]) > 2) cursorMovedAt = performance.now();
+  mouse = pos;
+});
+
+// Where the cat stands so its face is just short of the cursor.
+function catchSpot() {
+  const b = travelBounds();
+  const x = followSide > 0 ? mouse[0] - 132 : mouse[0] - 28;
+  return [clamp(x, b.left, b.right), clamp(mouse[1] - 40, b.top, b.floor)];
+}
+
+function followStep(now) {
+  const offset = mouse[0] - (p.x + PET_W / 2);
+  if (offset * followSide < -40) followSide = -followSide;
+  const spot = catchSpot();
+  const cursorStill = now - cursorMovedAt > POUNCE_AFTER;
+  if (caughtAt && cursorMovedAt > caughtAt) caughtAt = 0;
+  if (caughtAt) { p.tx = p.x; p.ty = p.y; return 0; }
+
+  const b = travelBounds();
+  const canPounce = now - lastPounce > POUNCE_COOLDOWN;
+  const stalk = [clamp(spot[0] - followSide * STALK_GAP, b.left, b.right), spot[1]];
+  [p.tx, p.ty] = canPounce ? stalk : spot;
+  const d = Math.hypot(p.tx - p.x, p.ty - p.y);
+
+  if (canPounce && cursorStill && d < 12 && !petting) {
+    startLeap(catchSpot, {
+      crouchMs: 950,
+      cancelOnCursor: true,
+      onLand: (t) => { lastPounce = caughtAt = t; p.sitting = true; meow(); heart(); heart(); },
+    });
+    return 0;
+  }
+  if (d < 8) { p.sitting = cursorStill; p.facing = followSide; return 0; }
+  return d > 380 ? 260 : d > 90 ? 150 : 90;
+}
+
+// --- surfaces: perching on other windows and climbing the screen's sides ---
+// The cat's feet sit at (x + FEET_X, y + FEET_Y) inside its 160x120 box.
+let FEET_X = 78, FEET_Y = 112;
+let wins = []; // other apps' windows, front to back, in overlay coordinates
+
+window.goose.onWindows((list) => { wins = list; followPerchWindow(); });
+
+function subtractSpan(parts, a, b) {
+  const out = [];
+  for (const [x0, x1] of parts) {
+    if (b <= x0 || a >= x1) { out.push([x0, x1]); continue; }
+    if (a > x0) out.push([x0, a]);
+    if (b < x1) out.push([b, x1]);
+  }
+  return out;
+}
+
+// Visible stretches of each window's top edge that are wide enough to sit on.
+function perchSegments() {
+  const b = bounds();
+  const segs = [];
+  wins.forEach((w, i) => {
+    if (w.y < b.top + 90 || w.y > b.floor + FEET_Y - 40) return; // needs headroom, and not the floor itself
+    if (w.x + w.w < b.left || w.x > b.right + PET_W) return;     // other screens' windows
+    let parts = [[Math.max(w.x, b.left + FEET_X), Math.min(w.x + w.w, b.right + FEET_X)]];
+    for (let j = 0; j < i; j++) {
+      const f = wins[j];
+      if (w.y >= f.y - 2 && w.y <= f.y + f.h) parts = subtractSpan(parts, f.x, f.x + f.w);
+    }
+    for (const [x0, x1] of parts) if (x1 - x0 >= 150) segs.push({ win: w, x0, x1, y: w.y });
+  });
+  return segs;
+}
+
+function segmentUnderFeet() {
+  const fx = p.x + FEET_X, fy = p.y + FEET_Y;
+  return perchSegments().find((s) => fx >= s.x0 && fx <= s.x1 && Math.abs(fy - 2 - s.y) < 30);
+}
+
+function landOnPerch(seg, now = performance.now()) {
+  p.perch = { pid: seg.win.pid, x: seg.win.x, y: seg.win.y, w: seg.win.w, h: seg.win.h };
+  p.y = seg.y - FEET_Y + 2;
+  p.tx = p.x; p.ty = p.y;
+  p.plan = { type: "perch", leaveAt: now + 20_000 + Math.random() * 40_000 };
+  p.pauseUntil = now + 1500;
+}
+
+function fallOff(vx = (Math.random() - 0.5) * 120) {
+  p.perch = null;
+  p.plan = null;
+  p.surfRotTarget = 0;
+  phys = { vx, vy: 0, spin: 0, dizzy: false };
+}
+
+// Windows are re-listed about once a second: ride along when the perch window
+// moves, and fall when it closes or something covers the spot.
+let ride = [0, 0];
+function followPerchWindow() {
+  if (!p.perch) return;
+  const cur = p.perch;
+  const score = (w) => Math.abs(w.w - cur.w) + Math.abs(w.h - cur.h) + 0.2 * (Math.abs(w.x - cur.x) + Math.abs(w.y - cur.y));
+  const same = wins.filter((w) => w.pid === cur.pid).sort((a, b) => score(a) - score(b))[0];
+  if (!same || score(same) > 400) { say(pick(["Whoa!", "Hey!", "Mrrp?!"]), 1500); return fallOff(); }
+  ride[0] += same.x - cur.x;
+  ride[1] += same.y - cur.y;
+  Object.assign(cur, { x: same.x, y: same.y, w: same.w, h: same.h });
+  const fx = p.x + ride[0] + FEET_X;
+  const covered = !perchSegments().some((s) => s.win === same && fx >= s.x0 && fx <= s.x1);
+  if (covered) { ride = [0, 0]; fallOff(); }
+}
+
+// Smoothly carry the cat along with a moving window.
+function applyRide(dt) {
+  if (!ride[0] && !ride[1]) return;
+  const k = Math.min(1, dt * 12);
+  const dx = Math.abs(ride[0]) < 0.5 ? ride[0] : ride[0] * k;
+  const dy = Math.abs(ride[1]) < 0.5 ? ride[1] : ride[1] * k;
+  p.x += dx; p.y += dy; p.tx += dx; p.ty += dy;
+  ride[0] -= dx; ride[1] -= dy;
+}
+
+// Timed move between two points (stepping onto or off a wall).
+function tweenStep(plan, now) {
+  const t = plan.tween;
+  const u = Math.min(1, (now - t.start) / t.dur);
+  const e = u * u * (3 - 2 * u);
+  p.x = lerp(t.from[0], t.to[0], e);
+  p.y = lerp(t.from[1], t.to[1], e);
+  p.tx = p.x; p.ty = p.y;
+  if (u >= 1) { plan.tween = null; return true; }
+  return false;
+}
+
+const WALL_LINES = ["Look at me! 🧗", "Parkour!", "I live up here now.", "The view is great from here."];
+
+// Returns the walking speed for this frame.
+function planStep(now) {
+  const plan = p.plan;
+  const b = bounds();
+  const area = myDisplay ? { x: myDisplay.workArea.x, y: myDisplay.workArea.y, w: myDisplay.workArea.width, h: myDisplay.workArea.height } : { x: 0, y: 0, w: W(), h: H() };
+
+  if (plan.type === "toPerch") {
+    const seg = perchSegments().find((s) => s.win.pid === plan.pid && plan.feetX >= s.x0 && plan.feetX <= s.x1);
+    if (!seg) { p.plan = null; return 0; }
+    const target = [plan.feetX - FEET_X, seg.y - FEET_Y + 2];
+    const d = Math.hypot(target[0] - p.x, target[1] - p.y);
+    if (d <= 460) {
+      startLeap(target, {
+        crouchMs: 420,
+        onLand: (t) => { const s = segmentUnderFeet(); s ? landOnPerch(s, t) : fallOff(0); },
+      });
+      p.plan = null;
+      return 0;
+    }
+    // Too far to jump: walk closer first.
+    const ux = (target[0] - p.x) / d, uy = (target[1] - p.y) / d;
+    p.tx = target[0] - ux * 400;
+    p.ty = clamp(target[1] - uy * 400, b.top, b.floor);
+    return now > p.pauseUntil ? 110 : 0;
+  }
+
+  if (plan.type === "perch") {
+    if (!p.perch) { p.plan = null; return 0; }
+    const seg = segmentUnderFeet();
+    if (plan.stage === "walkoff") {
+      const fx = p.x + FEET_X;
+      if (!seg || fx < seg.x0 + 4 || fx > seg.x1 - 4) { fallOff(p.facing * 90); return 0; }
+      return 45;
+    }
+    if (now > plan.leaveAt && seg) {
+      if (Math.random() < 0.5) {
+        // Hop down to the floor.
+        const fx = clamp(p.x + p.facing * (120 + Math.random() * 160), b.left, b.right);
+        p.perch = null; p.plan = null;
+        startLeap([fx, b.floor]);
+        return 0;
+      }
+      // Stroll off the nearer end and drop.
+      plan.stage = "walkoff";
+      const toRight = p.x + FEET_X > (seg.x0 + seg.x1) / 2;
+      p.tx = (toRight ? seg.x1 + 30 : seg.x0 - 30) - FEET_X;
+      p.ty = p.y;
+      return 45;
+    }
+    if (now > p.pauseUntil && Math.hypot(p.tx - p.x, p.ty - p.y) < 4 && seg) {
+      p.pauseUntil = now + 4000 + Math.random() * 7000;
+      if (Math.random() < 0.35) {
+        p.tx = clamp(seg.x0 + 30 + Math.random() * (seg.x1 - seg.x0 - 60), seg.x0 + 30, seg.x1 - 30) - FEET_X;
+        p.ty = p.y;
+        p.pauseUntil = now;
+      } else idleAction();
+    }
+    return now > p.pauseUntil ? 40 : 0;
+  }
+
+  if (plan.type === "climb") {
+    const edge = plan.side > 0 ? area.x + area.w : area.x;
+    const up = plan.side > 0 ? 1 : -1; // facing that means "up" on this wall
+    const floorFeetY = b.floor + FEET_Y;
+    if (plan.tween) {
+      if (tweenStep(plan, now)) {
+        if (plan.stage === "mount") {
+          plan.stage = "up";
+          p.ty = (b.top + FEET_Y + 20 + Math.random() * (floorFeetY - b.top - FEET_Y) * 0.5) - FEET_Y;
+        } else if (plan.stage === "dismount") {
+          p.plan = null;
+          p.facing = -plan.side;
+          p.pauseUntil = now + 1500;
+        }
+      }
+      return 0;
+    }
+    switch (plan.stage) {
+      case "approach": {
+        p.tx = plan.side > 0 ? b.right : b.left;
+        p.ty = b.floor;
+        if (Math.hypot(p.tx - p.x, p.ty - p.y) < 3 && now > p.pauseUntil) {
+          plan.stage = "mount";
+          p.facing = up;
+          p.surfRotTarget = plan.side > 0 ? -90 : 90;
+          plan.tween = { start: now, dur: 420, from: [p.x, p.y], to: [edge - plan.side * 2 - FEET_X, floorFeetY - 55 - FEET_Y] };
+          return 0;
+        }
+        return now > p.pauseUntil ? 90 : 0;
+      }
+      case "up":
+      case "down": {
+        p.facing = plan.stage === "up" ? up : -up;
+        if (Math.abs(p.ty - p.y) < 2) {
+          if (plan.stage === "down") {
+            plan.stage = "dismount";
+            p.surfRotTarget = 0;
+            plan.tween = { start: now, dur: 420, from: [p.x, p.y], to: [(plan.side > 0 ? b.right : b.left), b.floor] };
+            return 0;
+          }
+          plan.stage = "cling";
+          plan.until = now + 3000 + Math.random() * 5000;
+          if (Math.random() < 0.45) say(pick(WALL_LINES), 3000);
+        }
+        return 70;
+      }
+      case "cling": {
+        if (now < plan.until) return 0;
+        if (Math.random() < 0.5) {
+          plan.stage = "down";
+          p.ty = floorFeetY - 55 - FEET_Y;
+          return 0;
+        }
+        // Push off the wall and land on the floor further in.
+        const fx = clamp(p.x - plan.side * (220 + Math.random() * 200), b.left, b.right);
+        p.plan = null;
+        p.surfRotTarget = 0;
+        p.facing = -plan.side;
+        startLeap([fx, b.floor], { crouchMs: 250 });
+        return 0;
+      }
+    }
+  }
+  return 0;
+}
+
+// Leave whatever the cat was doing on a wall or window (it drops if it was up there).
+function abortPlan(fall = true) {
+  const plan = p.plan;
+  const aloft = Math.abs(p.surfRotTarget) > 1 || p.perch;
+  p.plan = null;
+  p.surfRotTarget = 0;
+  if (fall && aloft) fallOff(plan?.type === "climb" ? -plan.side * 160 : undefined);
+  p.perch = null;
+  ride = [0, 0];
+}
+
+// --- staying home (a corner, or wherever it was dropped) ---
+function homeStep(now, home) {
+  [p.tx, p.ty] = home;
+  const d = Math.hypot(p.tx - p.x, p.ty - p.y);
+  if (d > 150 && d < 520 && Math.random() < 0.8 * (1 / 60)) { startLeap(home); return 0; }
+  if (d < 4) {
+    p.facing = p.x + PET_W / 2 < centerX() ? 1 : -1;
+    if (now > p.pauseUntil) { p.pauseUntil = now + 5000 + Math.random() * 9000; idleAction(); }
+    return 0;
+  }
+  return d > 300 ? 200 : 80;
+}
+
+function wanderStep(now) {
+  if (now > p.pauseUntil && Math.hypot(p.tx - p.x, p.ty - p.y) < 4) {
+    p.pauseUntil = now + 3500 + Math.random() * 7000;
+    idleAction();
+    const r = Math.random();
+    const side = p.x + PET_W / 2 > centerX() ? 1 : -1;
+    if (r < 0.2 && now > p.dizzyUntil && !openSide(side > 0 ? "right" : "left")) {
+      p.plan = { type: "climb", side, stage: "approach" };
+      return 0;
+    }
+    const segs = r < 0.45 ? perchSegments() : [];
+    if (segs.length) {
+      const seg = pick(segs);
+      p.plan = { type: "toPerch", pid: seg.win.pid, feetX: seg.x0 + 40 + Math.random() * (seg.x1 - seg.x0 - 80) };
+      return 0;
+    }
+    pickWanderTarget();
+    const d = Math.hypot(p.tx - p.x, p.ty - p.y);
+    // Sometimes hop there instead of walking (after the pause).
+    if (d > 130 && d < 450 && Math.random() < 0.35) p.leapNext = true;
+  }
+  if (now > p.pauseUntil && p.leapNext) { p.leapNext = false; startLeap([p.tx, p.ty]); return 0; }
+  return now > p.pauseUntil ? 50 : 0;
+}
+
+// --- partner deliveries: notes, nudges, reminders, hearts ---
+const letter = document.getElementById("letter");
+const envelope = document.getElementById("envelope");
+const CARD_KINDS = ["note", "reminder", "session"];
+const inbox = [];
+let delivery = null; // { kind, text, from, stage: "carry" | "show" }
+
+window.goose.onPartnerMessage((m) => inbox.push(m));
+
+function startDelivery(now) {
+  const m = inbox.shift();
+  if (CARD_KINDS.includes(m.kind)) {
+    delivery = { ...m, stage: "carry" };
+    cat.action = null;
+    p.plan = null;
+    envelope.classList.add("show");
+    return;
+  }
+  // Light-touch kinds need no card.
+  if (m.kind === "heart") {
+    say(`${m.from} is thinking of you ❤️`, 4000);
+    for (let i = 0; i < 5; i++) setTimeout(heart, i * 180);
+    purr(true);
+    setTimeout(() => purr(false), 2500);
+  } else if (m.kind === "nudge") {
+    say(`${m.from}: ${m.text}`, 6000);
+    meow(true);
+    heart();
+  } else if (m.kind === "status" || m.kind === "tattle") {
+    say(m.text, 5500);
+  }
+  quietUntil = now + 20_000; // let the message stand on its own
+}
+
+function showLetter() {
+  const kind = delivery.kind;
+  letter.querySelector(".from").textContent =
+    kind === "reminder" ? `${delivery.from} asked me to remind you` :
+    kind === "session" ? `${delivery.from} started a focus session` : `A note from ${delivery.from}`;
+  letter.querySelector(".msg").textContent =
+    kind === "session" ? `${delivery.text || 25} minutes, together. Ready? 🐾` : delivery.text;
+  letter.classList.add("show");
+  const b = bounds();
+  letter.style.transform = `translate(${toLocalX(centerX()) - 165}px, ${toLocalY(clamp(p.y - 150, b.top + 10, b.floor))}px) rotate(-1deg)`;
+}
+
+function closeLetter() {
+  letter.classList.remove("show");
+  envelope.classList.remove("show");
+  delivery = null;
+}
+document.getElementById("letterOk").addEventListener("click", () => { closeLetter(); say("Delivered 🐾", 2000); });
+document.getElementById("letterReply").addEventListener("click", () => { closeLetter(); window.goose.openPartner(); });
+
+// --- grab, drag, fling ---
+let held = null; // { offX, offY, samples, spin, heading, moved, swing }
+let phys = null; // { vx, vy, spin, dizzy }
+
+const DIZZY_LINES = [
+  "Whoa… the room is spinning 😵‍💫", "I feel sick 🤢", "Too… many… circles…",
+  "Blehh. Never do that again.", "Which way is up?",
+];
+
+function makeDizzy(now = performance.now()) {
+  p.dizzyUntil = now + 5500;
+  say(pick(DIZZY_LINES), 4200);
+}
+
+petEl.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  held = { sx: e.clientX + origin().x, sy: e.clientY + origin().y, samples: [[e.clientX + origin().x, e.clientY + origin().y, performance.now()]], spin: 0, heading: null, moved: false, swing: 0 };
+});
+
+// Track the drag on the whole overlay: a fast drag can outrun the cat's own box.
+window.addEventListener("pointermove", (e) => {
+  if (!held) return;
+  const now = performance.now();
+  const gx = e.clientX + origin().x, gy = e.clientY + origin().y;
+  if (!held.moved) {
+    if (Math.hypot(gx - held.sx, gy - held.sy) < 6) return;
+    held.moved = true;
+    leap = null; phys = null; caughtAt = 0;
+    abortPlan(false);
+    cat.action = null; p.v = 0;
+    if (Math.random() < 0.5) say(pick(["Mrrp?!", "Hey! Put me down!", "Wheee?", "Where are we going?"]), 2000);
+  }
+  const [lx, ly, lt] = held.samples[held.samples.length - 1];
+  const dx = gx - lx, dy = gy - ly;
+  const speed = (Math.hypot(dx, dy) / Math.max(1, now - lt)) * 1000;
+  // Add up how much the drag direction turns: circles and shaking make the cat dizzy.
+  if (speed > 120) {
+    const heading = Math.atan2(dy, dx);
+    if (held.heading != null) { const t = heading - held.heading; held.spin += Math.abs(Math.atan2(Math.sin(t), Math.cos(t))); }
+    held.heading = heading;
+    if (held.spin > 3.5 && !held.queasy) { held.queasy = true; say(pick(["urp…", "Hnngh…", "Stop thaaat…"]), 2000); }
+  }
+  held.samples.push([gx, gy, now]);
+  if (held.samples.length > 12) held.samples.shift();
+});
+
+function release(e) {
+  if (!held) return;
+  const h = held;
+  held = null;
+  if (!h.moved) { onPetClick(); return; }
+  const now = performance.now();
+  const recent = h.samples.filter((s) => now - s[2] < 110);
+  const a = recent[0] || h.samples[0], b = h.samples[h.samples.length - 1];
+  const span = Math.max(16, b[2] - a[2]);
+  const vx = ((b[0] - a[0]) / span) * 1000, vy = ((b[1] - a[1]) / span) * 1000;
+  window.__lastSpin = h.spin;
+  const spun = h.spin > 5.5;
+  if (Math.hypot(vx, vy) > 700) {
+    phys = { vx, vy, spin: vx * 0.9, dizzy: spun || Math.hypot(vx, vy) > 2600 };
+    say(pick(["Wheee!", "AAAAA!", "Mrrrow?!"]), 1500);
+    return;
+  }
+  // A gentle drop means "stay here".
+  p.tx = p.x; p.ty = p.y; p.v = 0; p.squash = 0.6;
+  state.home = { mode: "spot", x: p.x, y: p.y };
+  window.goose.setHome(state.home);
+  if (spun) makeDizzy(now);
+  else say(pick(["I'll sit here 🐾", "Nice spot.", "Okay, this is my place now."]), 2500);
+}
+window.addEventListener("pointerup", release);
+window.addEventListener("pointercancel", release);
+
+function heldStep(dt) {
+  const [cx, cy] = held.samples[held.samples.length - 1];
+  const prev = held.samples[held.samples.length - 2] || held.samples[0];
+  const vx = (cx - prev[0]) / Math.max(0.016, (held.samples[held.samples.length - 1][2] - prev[2]) / 1000);
+  // Held by the scruff: body hangs below and swings opposite the drag.
+  held.swing += (clamp(vx * 0.03, -45, 45) - held.swing) * Math.min(1, dt * 8);
+  p.x = cx - (p.facing > 0 ? 100 : 60) * S;
+  p.y = cy - 38 * S;
+  p.rot = -35 + held.swing * p.facing;
+}
+
+function physStep(dt, now) {
+  const b = bounds();
+  phys.vy += 2200 * dt;
+  phys.vx *= Math.exp(-0.3 * dt);
+  p.x += phys.vx * dt; p.y += phys.vy * dt;
+  p.rot += phys.spin * dt;
+  if (p.x < b.left && !openSide("left")) { p.x = b.left; phys.vx = Math.abs(phys.vx) * 0.6; phys.spin *= -0.7; }
+  if (p.x > b.right && !openSide("right")) { p.x = b.right; phys.vx = -Math.abs(phys.vx) * 0.6; phys.spin *= -0.7; }
+  if (p.y < b.top && !openSide("top")) { p.y = b.top; phys.vy = Math.abs(phys.vy) * 0.5; }
+  // Falling onto a window's top edge: land there.
+  if (phys.vy > 0) {
+    const fx = p.x + FEET_X, fy = p.y + FEET_Y, prevFy = fy - phys.vy * dt;
+    const seg = perchSegments().find((s) => fx >= s.x0 + 20 && fx <= s.x1 - 20 && prevFy <= s.y + 2 && fy >= s.y);
+    if (seg) {
+      const dizzy = phys.dizzy || phys.vy > 1700;
+      phys = null;
+      p.v = 0; p.squash = 1;
+      p.rot = ((p.rot % 360) + 540) % 360 - 180;
+      landOnPerch(seg, now);
+      if (dizzy) makeDizzy(now);
+      return;
+    }
+  }
+  if (p.y >= b.floor) {
+    p.y = b.floor;
+    if (phys.vy > 350) {
+      if (phys.vy > 1500) phys.dizzy = true;
+      phys.vy = -phys.vy * 0.42; phys.vx *= 0.7; phys.spin *= 0.5;
+      p.squash = 1;
+    } else {
+      phys.vy = 0; phys.spin = 0;
+      phys.vx *= Math.exp(-8 * dt);
+      if (Math.abs(phys.vx) < 40) {
+        const dizzy = phys.dizzy;
+        phys = null;
+        p.tx = p.x; p.ty = p.y; p.v = 0; p.squash = 1;
+        p.rot = ((p.rot % 360) + 540) % 360 - 180; // unwind so it eases back upright the short way
+        if (dizzy) makeDizzy(now);
+        else say(pick(["Hmph.", "I meant to do that.", "Again! …no, wait."]), 2200);
+      }
+    }
+  }
+}
+
+// --- chatter: hellos, gentle reminders, the odd random thought ---
+const REMINDER_LINES = {
+  water: ["Drink some water 💧", "Hydration check! Sip sip 💧", "Water break? I'd knock the glass over, but you should drink it 💧"],
+  eyes: ["Look at something far away for 20 seconds 👀", "Rest your eyes for a moment 👀"],
+  stretch: ["Stretch time! Do what I do 🙆", "Stand up and stretch for a sec 🐾"],
+};
+const CHAT_GAPS = { chatty: [3, 6], normal: [6, 14], quiet: null }; // minutes between random lines
+const RANDOM_LINES = [
+  "Hi hello 👋", "You're doing great 💛", "*stares at you lovingly*", "Is it snack time? 🐟",
+  "I believe in you 🐾", "Meow. That's all.", "Remember to breathe 🫧", "Cats sleep 16 hours a day. Goals.",
+];
+const startedAt = performance.now();
+const lastReminder = { water: startedAt, eyes: startedAt, stretch: startedAt };
+let nextRandomChat = startedAt + (5 + Math.random() * 5) * 60_000;
+let quietUntil = startedAt + 4000;
+let greeted = false;
+let praisedAt = 0;
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h >= 23 || h < 5) return "Hi! It's late… don't stay up too long 🌙";
+  if (h < 12) return "Good morning! ☀️";
+  if (h < 18) return "Hi hello! 👋";
+  return "Good evening 🌙";
+}
+
+function chatter(now) {
+  if (state.mood !== "calm" || state.quiet || held || phys || leap || petting || delivery || now < quietUntil || now < p.dizzyUntil) return;
+  // The greeting belongs to the session, not to each screen's overlay.
+  if (!greeted && !state.greeted) {
+    greeted = true;
+    window.goose.greeted();
+    say(greeting(), 4000);
+    meow();
+    quietUntil = now + 30_000;
+    return;
+  }
+  if (!state.reminders) return;
+  const focus = state.focusMinutes || 0;
+  if (focus >= praisedAt + 25) {
+    praisedAt = focus - (focus % 25);
+    say(`${praisedAt} minutes of focus! Proud of you 🐾`, 5000); heart(); heart();
+    quietUntil = now + 60_000;
+    return;
+  }
+  const every = state.intervals || { water: 45, eyes: 25, stretch: 60 };
+  const due = Object.keys(REMINDER_LINES).find((k) => every[k] > 0 && now > lastReminder[k] + every[k] * 60_000);
+  if (due) {
+    say(pick(REMINDER_LINES[due]), 6000);
+    lastReminder[due] = now;
+    if (due === "stretch") cat.play("stretch", 2.5);
+    quietUntil = now + 60_000;
+    return;
+  }
+  const gap = CHAT_GAPS[state.chat] ?? CHAT_GAPS.normal;
+  if (gap && now > nextRandomChat) {
+    say(pick(RANDOM_LINES), 4500);
+    nextRandomChat = now + (gap[0] + Math.random() * (gap[1] - gap[0])) * 60_000;
+    quietUntil = now + 60_000;
+  }
+}
+
+// --- moods from the watcher ---
+window.goose.onState((s) => {
+  const prev = state.mood;
+  state = { ...s, home: s.home };
+  applySize(s.size);
+  const mine = (s.displays || []).find((d) => d.id === MY_DISPLAY);
+  if (mine) {
+    const first = !myDisplay;
+    myDisplay = mine;
+    if (first) { const b = bounds(); p.x = p.tx = b.left + 200; p.y = p.ty = b.floor; }
+  }
+  if (s.activeDisplay !== undefined) {
+    const nowActive = s.activeDisplay === MY_DISPLAY;
+    if (nowActive !== active) { active = nowActive; petEl.style.display = active ? "" : "none"; }
+  }
+  if (s.mood !== prev) onMoodChange(prev, s.mood);
+});
+
+function onMoodChange(prev, mood) {
+  petEl.classList.toggle("sleeping", mood === "sleep");
+  if (mood !== "calm") { if (leap?.cancelOnCursor) leap = null; caughtAt = 0; }
+  if (mood === "alert") { say("!", 2500, "alert"); p.pauseUntil = performance.now() + 2500; }
+  if (mood === "honk") lastNag = 0;
+  if (mood === "chase") { carrying = true; noteShown = false; }
+  if (mood !== "chase") hideNote();
+  if (prev === "chase" || prev === "honk") {
+    if (mood === "calm") { say("Good human. Purr.", 2500); heart(); }
+    pickWanderTarget();
+  }
+}
+
+function hideNote() { carrying = false; noteShown = false; note.classList.remove("show"); }
+
+document.getElementById("dismiss").addEventListener("click", () => {
+  hideNote();
+  window.goose.dismissNote();
+  say("Fine. I'm watching you.", 3000);
+});
+
+function onPetClick() {
+  meow();
+}
+petEl.addEventListener("dblclick", () => window.goose.openSettings());
+
+// Let clicks through everywhere except the pet and the note.
+let interactive = false;
+window.addEventListener("mousemove", (e) => {
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  const on = !!hit?.closest(".interactive") || !!held;
+  if (on !== interactive) { interactive = on; window.goose.setInteractive(on); }
+});
+
+function poseFor(mood, moving) {
+  if (held?.moved) return "dangle";
+  if (delivery?.stage === "show") return "sit";
+  if (phys) return "alert";
+  if (leap) return leap.stage === "crouch" ? "crouch" : "stand";
+  if (petting) return "happy";
+  if (mood === "sleep") return "sleep";
+  if (mood === "alert") return "alert";
+  if (mood === "honk") return "grumpy";
+  if (mood === "chase") return moving ? "grumpy" : "hiss";
+  return !moving && p.sitting ? "sit" : "stand";
+}
+
+let last = performance.now();
+let nextHeart = 0;
+let lastHeartSent = -Infinity;
+function frame(now) {
+  // rAF timestamps can trail performance.now(); never step time backwards.
+  const dt = clamp((now - last) / 1000, 0, 0.05);
+  last = Math.max(last, now);
+  if (!active) { requestAnimationFrame(frame); return; }
+  const mood = state.mood;
+  const dizzy = now < p.dizzyUntil;
+  const free = !held?.moved && !phys;
+  const following = state.follow && mood === "calm" && mouse && !dizzy;
+
+  // Petting: hover over a calm or sleepy cat for a moment. Checked every frame
+  // because the cat can walk out from under a still cursor.
+  const overPet = !!mouse && !!document.elementFromPoint(toLocalX(mouse[0]), toLocalY(mouse[1]))?.closest("#pet");
+  if (overPet && !hoverSince) hoverSince = now;
+  if (!overPet) hoverSince = 0;
+  const wasPetting = petting;
+  petting = free && !leap && (mood === "calm" || mood === "sleep") && hoverSince > 0 && now - hoverSince > 500;
+  if (petting !== wasPetting) purr(petting);
+  if (petting && !wasPetting && now - lastHeartSent > 30_000) { lastHeartSent = now; window.goose.petted(); }
+  if (petting && now > nextHeart) { heart(); nextHeart = now + 450; }
+
+  // Cards need the cat free to carry them; hearts and nudges land right away.
+  if (!delivery && inbox.length) {
+    const needsCat = CARD_KINDS.includes(inbox[0].kind);
+    if (!needsCat || (free && !leap && mood !== "chase")) startDelivery(now);
+  }
+
+  let targetSpeed = 0;
+  if (held?.moved) {
+    heldStep(dt);
+  } else if (phys) {
+    physStep(dt, now);
+  } else if (leap) {
+    leapStep(now);
+  } else if (delivery) {
+    if (delivery.stage === "carry") {
+      p.tx = centerX() - PET_W / 2 - 150; p.ty = clamp(p.ty, bounds().top, bounds().floor);
+      targetSpeed = 210;
+      if (Math.hypot(p.tx - p.x, p.ty - p.y) < 6) {
+        delivery.stage = "show";
+        envelope.classList.remove("show");
+        showLetter();
+        meow(true);
+        p.sitting = true;
+      }
+    }
+  } else if (mood === "chase") {
+    p.tx = centerX() - 165 - PET_W - 10; p.ty = centerY() - 20;
+    targetSpeed = 260;
+  } else if (mood === "honk") {
+    if (now - lastNag > 7000) {
+      meow(true); lastNag = now;
+      say(NAGS[Math.floor(Math.random() * NAGS.length)](), 5500);
+      p.tx = centerX() - PET_W / 2 + (Math.random() - 0.5) * 300; p.ty = bounds().floor - 120;
+    }
+    targetSpeed = 140;
+  } else if (petting || mood !== "calm") {
+    targetSpeed = 0;
+  } else if (following) {
+    targetSpeed = followStep(now);
+  } else {
+    const home = homeSpot();
+    targetSpeed = home ? homeStep(now, home) : p.plan ? planStep(now) : wanderStep(now);
+  }
+  // Anything but free roaming pulls the cat down from walls and windows.
+  const roaming = mood === "calm" && !following && !homeSpot();
+  if (p.plan && !roaming && !held?.moved && !phys) abortPlan();
+  if (p.perch && free && !leap) applyRide(dt);
+  if (dizzy) targetSpeed *= 0.4;
+
+  // Accelerate and brake smoothly instead of starting and stopping dead.
+  let moving = false, v = 0;
+  if (free && !leap) {
+    const dx = p.tx - p.x, dy = p.ty - p.y, dist = Math.hypot(dx, dy);
+    if (dist < 2) targetSpeed = 0;
+    p.v += (targetSpeed - p.v) * Math.min(1, dt * (targetSpeed > p.v ? 4 : 7));
+    v = Math.min(p.v, Math.sqrt(2 * 500 * dist));
+    moving = v > 6 && dist > 1;
+    if (moving) {
+      const step = Math.min(dist, v * dt);
+      p.x += (dx / dist) * step; p.y += (dy / dist) * step;
+      if (dizzy) p.y += Math.sin(now / 140) * 0.8; // stagger
+      if (Math.abs(dx) > 3) p.facing = dx > 0 ? 1 : -1;
+      cat.tiltHead(0);
+      cat.action = null;
+      p.sitting = false;
+    }
+  }
+  if (free && (mood === "alert" || (mood === "chase" && !moving))) p.facing = p.x + PET_W / 2 < centerX() ? 1 : -1;
+  if (!held?.moved && !phys) p.rot += (0 - p.rot) * Math.min(1, dt * 10);
+
+  // Turning around squashes through zero instead of snapping.
+  p.flip += (p.facing - p.flip) * Math.min(1, dt * 14);
+  p.squash += (0 - p.squash) * Math.min(1, dt * 9);
+  p.surfRot += (p.surfRotTarget - p.surfRot) * Math.min(1, dt * 10);
+
+  let hop = 0, airborne = 0;
+  if (leap?.stage === "air") {
+    const u = Math.min(1, (now - leap.start) / leap.dur);
+    hop = Math.sin(Math.PI * u) * leap.height;
+    airborne = Math.min(1, Math.sin(Math.PI * u) * 1.8);
+  }
+  if (held?.moved || phys) airborne = 1;
+
+  // Eyes follow the cursor (converted into the cat's local, possibly mirrored, space).
+  let look = null;
+  if (mouse && mood !== "sleep" && Math.abs(p.surfRot) < 5) {
+    const lx = mouse[0] - p.x, ly = mouse[1] - p.y + hop;
+    look = [p.facing > 0 ? lx : PET_W - lx, ly];
+  }
+  if (master) master.gain.value = state.quiet ? 0 : (state.volume ?? 60) / 100; // silent in meetings
+  cat.dizzy = dizzy;
+  cat.setPose(poseFor(mood, moving));
+  cat.update(dt, { moving, speed: v, look, airborne, hop });
+  // No floor shadow for a cat in the air or clinging to a wall.
+  cat.shadow.style.opacity = held?.moved || phys || Math.abs(p.surfRot) > 5 ? 0 : 1;
+
+  petEl.classList.toggle("left", p.facing < 0);
+  petEl.style.transform = `translate(${toLocalX(p.x)}px, ${toLocalY(p.y)}px)`;
+  const flip = Math.abs(p.flip) < 0.04 ? 0.04 * Math.sign(p.flip || 1) : p.flip;
+  const sx = 1 + 0.14 * p.squash, sy = 1 - 0.16 * p.squash;
+  // Stand on the wall (rotate about the feet), flip about the middle,
+  // rotate about the scruff when held, squash about the feet.
+  cat.svg.style.transform =
+    `translateY(${-hop}px) translate(${FEET_X}px,${FEET_Y}px) rotate(${p.surfRot}deg) translate(${-FEET_X}px,${-FEET_Y}px) ` +
+    `translate(${PET_W / 2}px,0) scaleX(${flip}) translate(${-PET_W / 2}px,0) ` +
+    `translate(${100 * S}px,${38 * S}px) rotate(${p.rot}deg) translate(${-100 * S}px,${-38 * S}px) ` +
+    `translate(${FEET_X}px,${FEET_Y}px) scale(${sx},${sy}) translate(${-FEET_X}px,${-FEET_Y}px)`;
+
+  if (delivery?.stage === "carry") {
+    envelope.style.transform = `translate(${toLocalX(p.x) + (p.facing > 0 ? 118 : 12) * S}px, ${toLocalY(p.y) + 34 * S - hop}px) rotate(${Math.sin(now / 130) * 7}deg)`;
+  }
+
+  if (mood === "chase" && free) {
+    if (carrying && !moving) {
+      carrying = false; noteShown = true;
+      hiss(); lastNag = now;
+      say("HSSSS!", 2500);
+    } else if (noteShown && now - lastNag > 4500) {
+      meow(true); lastNag = now;
+    }
+    note.querySelector(".goal").textContent = state.goal;
+    note.classList.add("show");
+    // While carried, the note hangs from the cat's mouth; then it lands mid-screen.
+    const mouthX = toLocalX(p.x) + (p.facing > 0 ? 135 : 25);
+    const nx = carrying ? mouthX - 165 + p.facing * 60 : toLocalX(centerX()) - 165;
+    const ny = carrying ? toLocalY(p.y) + 30 : toLocalY(centerY()) - 100;
+    const tilt = carrying ? Math.sin(now / 110) * 8 : -2;
+    note.style.transform = `translate(${nx}px, ${ny}px) rotate(${tilt}deg) scale(${carrying ? 0.55 : 1})`;
+  }
+
+  chatter(now);
+  // Off the edge of this screen and onto the next one.
+  const wa = myDisplay?.workArea;
+  if (wa && !held?.moved) {
+    const cx = p.x + PET_W / 2, cy = p.y + PET_H / 2;
+    if ((cx < wa.x && openSide("left")) || (cx > wa.x + wa.width && openSide("right")) ||
+        (cy < wa.y && openSide("top")) || (cy > wa.y + wa.height && openSide("bottom"))) {
+      handOff();
+    }
+  }
+
+  if (now > bubbleUntil) bubble.classList.remove("show");
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

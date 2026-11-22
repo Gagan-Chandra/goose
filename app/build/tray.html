@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  html,body{margin:0;width:128px;height:128px;background:transparent;overflow:hidden}
+  #pet{position:absolute;left:0;top:0;width:128px;height:128px}
+  #pet svg{width:100%;height:100%;overflow:visible}
+</style></head><body><div id="pet"></div>
+<script src="../cat.js"></script>
+<script>
+  // Head only: a menu-bar icon has no room for a whole cat.
+  const cat = new Cat(document.getElementById("pet"));
+  cat.setPose("sit");
+  cat.s.blinkAt = 1e9;
+  cat.s.twitchAt = 1e9;
+  for (let i = 0; i < 150; i++) cat.update(1 / 60, {});
+  cat.shadow.style.opacity = 0;
+
+  // Frame the head exactly. getBBox is in head coordinates; the group's own
+  // transform maps it into the picture's coordinates (getCTM would mix in pixels).
+  const box = cat.head.getBBox();
+  const m = cat.head.transform.baseVal.consolidate().matrix;
+  const pt = cat.svg.createSVGPoint();
+  pt.x = box.x + box.width / 2;
+  pt.y = box.y + box.height / 2;
+  const c = pt.matrixTransform(m);
+  const side = Math.max(box.width, box.height) + 8;
+  cat.svg.setAttribute("viewBox", (c.x - side / 2) + " " + (c.y - side / 2) + " " + side + " " + side);
+</script></body></html>

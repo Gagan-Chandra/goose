@@ -1,0 +1,224 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>Cat settings</title>
+<style>
+  :root { --bg: #fbfaf7; --card: #fff; --fg: #1b1b1b; --muted: #6b6b6b; --line: #e3e0d9; --accent: #f08a24; --field: #fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1b1b1d; --card: #242427; --fg: #f2f2f2; --muted: #a0a0a0; --line: #38383b; --field: #2c2c30; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 22px 22px 90px; background: var(--bg); color: var(--fg);
+    font: 14px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  h1 { margin: 0 0 3px; font-size: 21px; }
+  .sub { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  label { display: block; font-weight: 600; margin: 12px 0 5px; }
+  section > label:first-of-type { margin-top: 0; }
+  textarea, input[type=text], select { width: 100%; padding: 9px 11px; border: 1.5px solid var(--line);
+    border-radius: 9px; background: var(--field); color: var(--fg); font: inherit; }
+  textarea { height: 62px; resize: none; }
+  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 5px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row span.t { font-weight: 600; }
+  .row .side { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+  input[type=number] { width: 68px; padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 8px;
+    background: var(--field); color: var(--fg); font: inherit; text-align: right; }
+  input[type=range] { width: 150px; accent-color: var(--accent); }
+  input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--accent); }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 14px 22px; background: var(--bg);
+    border-top: 1px solid var(--line); }
+  button { width: 100%; padding: 11px; border: 0; border-radius: 10px; background: var(--accent);
+    color: #241300; font: 650 15px -apple-system, "Segoe UI", system-ui, sans-serif; cursor: pointer; }
+  .error { color: #d23c2a; font-size: 12.5px; margin: 8px 0 0; min-height: 1em; }
+  .privacy { color: var(--muted); font-size: 11.5px; margin: 0; }
+  .hide { display: none; }
+</style>
+</head>
+<body>
+  <h1>🐱 Cat settings</h1>
+  <p class="sub">Tell the cat what you're up to, and how much of a nuisance to be.</p>
+
+  <section id="permBanner" class="hide" style="border-color:#e0a02c">
+    <h2 style="color:#c8791a">Permission needed</h2>
+    <p style="margin:0 0 10px">The cat can't see which window is in front, so it can't tell work from slacking.
+      Allow it under Privacy &amp; Security → Accessibility, then come back.</p>
+    <button id="openPerm" style="width:auto;padding:9px 14px">Open System Settings</button>
+  </section>
+
+  <section>
+    <h2>Focus mode</h2>
+    <div class="row">
+      <span class="t">Watch my screen and nag me</span>
+      <span class="side"><input type="checkbox" id="focusMode"></span>
+    </div>
+    <div class="hint">Off by default. The cat is just a pet: it never looks at your screen, needs no
+      permissions, and sends nothing anywhere.<br>
+      Switch it on and the cat checks whether the window in front of you matches your goal, and pesters
+      you when it doesn't. That needs the Accessibility permission, an internet connection and your license key.</div>
+  </section>
+
+  <section id="goalSection">
+    <h2>Your goal</h2>
+    <label for="goal">What should you be doing?</label>
+    <textarea id="goal" placeholder="study for my organic chemistry final"></textarea>
+    <div class="hint">Be specific: "practice Spanish, YouTube lessons are fine" works better than "study".<br>
+      <b>Leave it empty</b> and the cat stops watching, even with focus mode on.</div>
+
+    <label for="strictness">How strict is the cat?</label>
+    <select id="strictness">
+      <option value="chill">Chill — stares after 3s, note after 90s</option>
+      <option value="normal">Normal — stares after 1s, note after 30s</option>
+      <option value="strict">Strict — stares after 1s, note after 15s</option>
+    </select>
+  </section>
+
+  <section>
+    <h2>Behavior</h2>
+    <div class="row">
+      <span class="t">Start when I log in</span>
+      <span class="side"><input type="checkbox" id="startAtLogin"></span>
+    </div>
+    <div class="row">
+      <span class="t">Follow my cursor</span>
+      <span class="side"><input type="checkbox" id="followCursor"></span>
+    </div>
+    <div class="row">
+      <span class="t">Hangs out</span>
+      <span class="side">
+        <select id="home" style="width: 190px">
+          <option value="roam">Roams the whole screen</option>
+          <option value="bottom-right">Bottom-right corner</option>
+          <option value="bottom-left">Bottom-left corner</option>
+          <option value="top-right">Top-right corner</option>
+          <option value="top-left">Top-left corner</option>
+          <option value="spot">Where I dropped it</option>
+        </select>
+      </span>
+    </div>
+    <div class="row">
+      <span class="t">Size</span>
+      <span class="side"><input type="range" id="size" min="70" max="150" step="5"><b id="sizeVal">100%</b></span>
+    </div>
+    <div class="row">
+      <span class="t">Sound</span>
+      <span class="side"><input type="range" id="volume" min="0" max="100" step="5"><b id="volumeVal">60%</b></span>
+    </div>
+    <div class="hint">Drag the cat anywhere to make it stay there. Follow mode pauses roaming and climbing.</div>
+  </section>
+
+  <section>
+    <h2>Reminders &amp; chatter</h2>
+    <div class="row">
+      <span class="t">Reminders on</span>
+      <span class="side"><input type="checkbox" id="reminders"></span>
+    </div>
+    <div class="row">
+      <span class="t">Drink water</span>
+      <span class="side">every <input type="number" id="water" min="0" max="600" step="5"> min</span>
+    </div>
+    <div class="row">
+      <span class="t">Rest your eyes</span>
+      <span class="side">every <input type="number" id="eyes" min="0" max="600" step="5"> min</span>
+    </div>
+    <div class="row">
+      <span class="t">Stand and stretch</span>
+      <span class="side">every <input type="number" id="stretch" min="0" max="600" step="5"> min</span>
+    </div>
+    <div class="row">
+      <span class="t">Random chatter</span>
+      <span class="side">
+        <select id="chat" style="width: 150px">
+          <option value="chatty">Chatty</option>
+          <option value="normal">Now and then</option>
+          <option value="quiet">Never</option>
+        </select>
+      </span>
+    </div>
+    <div class="hint">Set a reminder to 0 to turn just that one off.</div>
+  </section>
+
+  <section id="keySection">
+    <h2>Focus mode key</h2>
+    <label for="typesafeKey">Your TypeSafe key</label>
+    <input type="text" id="typesafeKey" placeholder="apikey_…" autocomplete="off" spellcheck="false">
+    <div class="hint">Focus mode asks TypeSafe's Jev model whether your window matches your goal.
+      Make a key at <b>typesafe.ai</b> — it's about $0.00002 per check, so a month of heavy use costs a few cents.<br>
+      Without a key the cat still nags you, but only from a short built-in list of distracting sites.
+      The key is stored on this computer and sent only to TypeSafe.</div>
+    <p class="error" id="error"></p>
+    <p class="privacy">Only the app name and window title are checked, and only when they change. Nothing is stored and no screenshots are taken.</p>
+  </section>
+
+  <div class="bar"><button id="save">Save</button></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const CORNERS = ["bottom-right", "bottom-left", "top-right", "top-left"];
+const ERRORS = {
+  bad_key: "TypeSafe rejected that key. Check it and try again.",
+  no_key: "No key yet, so the cat is using its short built-in list of distracting sites.",
+  unreachable: "Can't reach TypeSafe. Using the built-in list for now.",
+};
+
+$("openPerm").addEventListener("click", () => window.goose.openAccessibility());
+
+// The goal and the permission warning only matter while focus mode is on.
+function showFocus() {
+  const on = $("focusMode").checked;
+  $("goalSection").classList.toggle("hide", !on);
+  $("keySection").classList.toggle("hide", !on);
+  if (!on) $("permBanner").classList.add("hide");
+}
+$("focusMode").addEventListener("change", showFocus);
+
+const show = (el, suffix) => { $(`${el}Val`).textContent = $(el).value + suffix; };
+$("size").addEventListener("input", () => show("size", "%"));
+$("volume").addEventListener("input", () => show("volume", "%"));
+
+window.goose.getSettings().then((s) => {
+  $("goal").value = s.goal || "";
+  $("typesafeKey").value = s.typesafeKey || "";
+  $("strictness").value = s.strictness || "normal";
+  $("chat").value = s.chat || "normal";
+  $("followCursor").checked = !!s.followCursor;
+  $("reminders").checked = s.reminders !== false;
+  for (const k of ["water", "eyes", "stretch"]) $(k).value = s[k] ?? { water: 45, eyes: 25, stretch: 60 }[k];
+  $("startAtLogin").checked = !!s.startAtLogin;
+  $("focusMode").checked = !!s.focusMode;
+  showFocus();
+  $("permBanner").classList.toggle("hide", s.permissionOk !== false || !s.focusMode);
+  $("size").value = s.size ?? 100;
+  $("volume").value = s.volume ?? 60;
+  show("size", "%"); show("volume", "%");
+  const home = s.home || { mode: "roam" };
+  $("home").value = home.mode === "corner" ? home.corner : home.mode;
+  $("error").textContent = ERRORS[s.lastError] || "";
+});
+
+$("save").addEventListener("click", async () => {
+  const goal = $("goal").value.trim(); // empty is fine: the cat just hangs out
+  const h = $("home").value;
+  await window.goose.saveSettings({
+    goal,
+    typesafeKey: $("typesafeKey").value,
+    strictness: $("strictness").value,
+    chat: $("chat").value,
+    followCursor: $("followCursor").checked,
+    focusMode: $("focusMode").checked,
+    startAtLogin: $("startAtLogin").checked,
+    reminders: $("reminders").checked,
+    water: $("water").value, eyes: $("eyes").value, stretch: $("stretch").value,
+    size: $("size").value, volume: $("volume").value,
+    home: CORNERS.includes(h) ? { mode: "corner", corner: h } : h === "roam" ? { mode: "roam" } : undefined,
+  });
+  window.close();
+});
+</script>
+</body>
+</html>
