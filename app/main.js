@@ -180,7 +180,9 @@ function createTray() {
     tray.setTitle("🐱");
   } else {
     tray = new Tray(nativeImage.createFromPath(path.join(here, "assets", "tray32.png")));
-    tray.setToolTip("Your cat");
+    tray.setToolTip("Goose: click for the menu");
+    // Windows opens a tray menu only on right-click; make a left-click work too.
+    tray.on("click", () => tray.popUpContextMenu());
   }
   refreshTray();
 }

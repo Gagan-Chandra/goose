@@ -1,6 +1,7 @@
 // Couple edition: pairing with a partner and exchanging notes, nudges,
 // reminders and status through the relay. Runs in the main process.
 import { RELAY_URL } from "./config.js";
+import { httpFetch } from "./http.js";
 
 // Check in often only while something is happening; otherwise rarely.
 // Every check is a request against the server's daily free allowance.
@@ -60,7 +61,7 @@ const identity = () => ctx?.getSettings().partner || null;
 
 async function api(path, body) {
   try {
-    const res = await fetch(`${RELAY_URL}${path}`, {
+    const res = await httpFetch(`${RELAY_URL}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

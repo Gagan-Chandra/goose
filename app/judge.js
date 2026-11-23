@@ -3,6 +3,8 @@
 // call goes straight to TypeSafe with no server in between.
 // Falls back to a small built-in list when there's no key or no connection.
 
+import { httpFetch } from "./http.js";
+
 const JEV_URL = "https://api.typesafe.ai/v1/systemone";
 
 const OFFLINE_DISTRACTIONS = [
@@ -14,7 +16,7 @@ const OFFLINE_DISTRACTIONS = [
 export async function judge({ goal, app, title, key }) {
   if (!key) return { ...offline(app, title), error: "no_key" };
   try {
-    const res = await fetch(JEV_URL, {
+    const res = await httpFetch(JEV_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify(buildJudgment({ goal, app, title })),
