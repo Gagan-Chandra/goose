@@ -74,9 +74,12 @@ async function api(path, body) {
 
 // --- pairing ---
 export async function pairStart(name) {
+  const old = identity();
+  if (old?.deviceId) await api("/pair/leave", { deviceId: old.deviceId }); // replacing an unused code
   const res = await api("/pair/start", { name });
   if (res.error) return res;
-  ctx.patchSettings({ partner: { deviceId: res.deviceId, pairId: res.pairId, name } });
+  // Keep the code so the waiting screen can show it until the partner joins.
+  ctx.patchSettings({ partner: { deviceId: res.deviceId, pairId: res.pairId, name, code: res.code, codeExpires: res.expiresAt } });
   tick();
   return res; // includes the code to send to the partner
 }

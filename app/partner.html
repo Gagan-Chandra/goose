@@ -76,6 +76,11 @@
       <h2>Right now</h2>
       <div class="status"><span class="dot" id="dot"></span><span id="who">—</span></div>
       <p class="muted" id="detail" style="margin:6px 0 0"></p>
+      <div id="waitCode" class="hide">
+        <div class="code" id="waitCodeOut">------</div>
+        <p class="muted" id="waitCodeNote" style="margin:4px 0 0"></p>
+        <div class="row"><button id="newCode" class="ghost grow">Get a new code</button></div>
+      </div>
       <p class="muted" style="margin:10px 0 0">Hearts sent together: <span class="hearts" id="hearts">0</span></p>
     </section>
 
@@ -136,10 +141,19 @@ async function refresh() {
   $("setup").classList.toggle("hide", !!s.identity);
   $("paired").classList.toggle("hide", !s.identity);
   if (!s.identity) return;
-  if (!s.partner) {
+  const waiting = !s.partner;
+  $("waitCode").classList.toggle("hide", !waiting);
+  if (waiting) {
     $("who").textContent = "Waiting for your partner to join…";
     $("dot").className = "dot";
-    $("detail").textContent = "Send them the code from this window.";
+    const { code, codeExpires, name } = s.identity;
+    const live = code && codeExpires > Date.now();
+    $("detail").textContent = live ? "Send them this code. They open Partner → Set up the Couple edition → I have a code." : "";
+    $("waitCodeOut").textContent = live ? code : "------";
+    $("waitCodeNote").textContent = live
+      ? `Works once, until ${new Date(codeExpires).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.`
+      : "That code has expired. Get a new one and send it to them.";
+    $("newCode").dataset.name = name || "Me";
   } else {
     const p = s.partner;
     const label = { focusing: "focusing", slacking: "slacking off", break: "on a break", away: "around", offline: "offline" }[p.status] || p.status;
@@ -177,6 +191,12 @@ $("start").addEventListener("click", async () => {
   $("codeOut").textContent = res.code;
   $("codeBox").classList.remove("hide");
   toast("setupToast", "Code ready. Send it to your partner.", 6000);
+  refresh();
+});
+
+$("newCode").addEventListener("click", async () => {
+  const res = await window.goose.pairStart($("newCode").dataset.name || "Me");
+  if (res.error) return fail("sendToast", res);
   refresh();
 });
 
